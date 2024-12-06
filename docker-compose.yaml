@@ -1,0 +1,56 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - pgbouncer
+    environment:
+      - DATABASE_URL=postgres://postgres:post@pgbouncer:6432/pgbounce?sslmode=disable
+    networks:
+      - app-network
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    container_name: pg_container
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=post
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_DB=pgbounce
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data/pgdata:Z
+    healthcheck:
+        test: [ "CMD-SHELL", "pg_isready -U postgres -d pgbounce" ]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+    networks:
+      - app-network
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    restart: always
+    ports:
+      - "6432:6432"
+    volumes:
+      - ./store/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:Z
+      - ./store/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:Z
+    depends_on:
+      - db
+    networks:
+      - app-network
+    healthcheck:
+        test: ["CMD", "pg_isready", "-h", "db", "-U","postgres"]
+        interval: 10s
+
+
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+    driver: local
