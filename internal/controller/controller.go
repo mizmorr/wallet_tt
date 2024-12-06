@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func ToPostgres() error {
@@ -48,7 +48,4 @@ func ViaBouncer() error {
 	}
 	fmt.Println(greeting)
 	return nil
-}
-
-func main() {
 }
