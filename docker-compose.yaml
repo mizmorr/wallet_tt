@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: provider
     build:
       context: .
       dockerfile: Dockerfile
@@ -7,14 +8,14 @@ services:
       - "8080:8080"
     depends_on:
       - pgbouncer
-    environment:
-      - DATABASE_URL=postgres://postgres:post@pgbouncer:6432/pgbounce?sslmode=disable
+    env_file:
+      - config/config.env
     networks:
       - app-network
   db:
     image: postgres:latest
     restart: always
-    container_name: pg_container
+    container_name: postgre
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=post
@@ -30,6 +31,7 @@ services:
       - app-network
   pgbouncer:
     image: edoburu/pgbouncer:latest
+    container_name: pgbouncer
     restart: always
     ports:
       - "6432:6432"
