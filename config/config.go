@@ -1,13 +1,10 @@
 package config
 
 import (
-	"path/filepath"
-	"regexp"
 	"sync"
 	"time"
 
-	"github.com/caarlos0/env"
-	"github.com/joho/godotenv"
+	"github.com/caarlos0/env/v6"
 )
 
 type Config struct {
@@ -25,27 +22,11 @@ var (
 	config Config
 )
 
-const projectDirName = "wallet_tt"
+const projectDirName = "app"
 
 func Get() *Config {
 	once.Do(func() {
-		absPath, err := filepath.Abs(filepath.Dir("."))
-		if err != nil {
-			panic(err)
-		}
-
-		projectName := regexp.MustCompile(`^(.*` + projectDirName + `)`)
-
-		rootPath := projectName.Find([]byte(absPath))
-
-		envPath := filepath.Join(string(rootPath), "config", "config.env")
-
-		err = godotenv.Load(envPath)
-		if err != nil {
-			panic(err)
-		}
-
-		err = env.Parse(&config)
+		err := env.Parse(&config)
 		if err != nil {
 			panic(err)
 		}
