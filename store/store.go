@@ -7,14 +7,13 @@ import (
 	"github.com/google/uuid"
 	logger "github.com/mizmorr/loggerm"
 	"github.com/mizmorr/wallet/internal/model"
-	"github.com/mizmorr/wallet/repository"
-	"github.com/mizmorr/wallet/store/mocks"
+	reporitory "github.com/mizmorr/wallet/internal/repository"
 	"github.com/mizmorr/wallet/store/pg"
 	"github.com/pkg/errors"
 )
 
 type WalletRepo interface {
-	Change(ctx context.Context, wallet *model.Wallet) (uuid.UUID, error)
+	Upsert(ctx context.Context, wallet *model.Wallet) (uuid.UUID, error)
 	GetByID(ctx context.Context, id uuid.UUID) (*model.Wallet, error)
 }
 
@@ -23,10 +22,9 @@ type Store struct {
 	Wallet WalletRepo
 }
 
-var (
-	_     WalletRepo = (*mocks.WalletRepo)(nil)
-	store Store
-)
+var _ WalletRepo = (*reporitory.WalletRepository)(nil)
+
+var store Store
 
 func New(ctx context.Context) (*Store, error) {
 	logger := logger.GetLoggerFromContext(ctx)
@@ -42,7 +40,7 @@ func New(ctx context.Context) (*Store, error) {
 	if pg != nil {
 		store.PG = pg
 		go store.keepAlive(ctx)
-		store.Wallet = repository.NewWalletRepository(pg)
+		store.Wallet = reporitory.NewWalletRepository(pg)
 	}
 	logger.Info().Msg("PostgreSQL store initialized successfully")
 	return &store, nil
