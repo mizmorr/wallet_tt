@@ -13,7 +13,8 @@ import (
 )
 
 type WalletRepo interface {
-	Upsert(ctx context.Context, wallet *model.Wallet) (uuid.UUID, error)
+	Deposit(ctx context.Context, wallet *model.Wallet) error
+	Withdraw(ctx context.Context, wallet *model.Wallet) error
 	GetByID(ctx context.Context, id uuid.UUID) (*model.Wallet, error)
 }
 

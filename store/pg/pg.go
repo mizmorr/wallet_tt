@@ -9,7 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/mizmorr/auth_tt/pkg/logger"
+
+	logger "github.com/mizmorr/loggerm"
 	"github.com/mizmorr/wallet/config"
 )
 
