@@ -17,7 +17,7 @@ type Config struct {
 	PgConnAttempts      int           `env:"PG_CONN_ATTEMPTS"`
 	PgHealthCheckPeriod time.Duration `env:"PG_HEALTH_CHECK_PERIOD"`
 	PgMaxIdleTime       time.Duration `env:"PG_MAX_IDLE_TIME"`
-	HTTPPort            string        `env:"HTTP_PORT"`
+	HTTPAddr            string        `env:"HTTP_ADDR"`
 }
 
 var (
