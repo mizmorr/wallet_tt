@@ -1,26 +1,18 @@
 package router
 
 import (
-	"log"
-	"net/http"
-
+	"github.com/gin-gonic/gin"
 	"github.com/mizmorr/wallet/internal/controller"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func Handle() {
-	http.HandleFunc("/postgr", func(w http.ResponseWriter, r *http.Request) {
-		er := controller.ToPostgres()
-		if er != nil {
-			w.Write([]byte("database problem: " + er.Error()))
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.Write([]byte("everything is gOOD!"))
-			w.WriteHeader(http.StatusOK)
-		}
-	})
-
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		log.Fatalf("listen error: %v", err)
+func NewRouter(handler *gin.Engine, c *controller.WalletController) {
+	handler.Use(gin.Recovery())
+	handler.Use(gin.Logger())
+	handler.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	v1 := handler.Group("api/v1")
+	{
+		v1.POST("/wallet", c.Operate)
+		v1.GET("/wallets/", c.Get)
 	}
 }
