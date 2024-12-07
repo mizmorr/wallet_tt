@@ -24,7 +24,7 @@ func NewWalletService(store *store.Store, ctx context.Context) (*WalletService, 
 	}, nil
 }
 
-func (svc *WalletService) Get(ctx context.Context, id uuid.UUID) (*model.Wallet, error) {
+func (svc *WalletService) Get(ctx context.Context, id uuid.UUID) (*model.WalletResponse, error) {
 	wallet, err := svc.store.Wallet.GetByID(ctx, id)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get wallet by id")
@@ -32,13 +32,25 @@ func (svc *WalletService) Get(ctx context.Context, id uuid.UUID) (*model.Wallet,
 	if wallet == nil {
 		return nil, errors.New("wallet not found")
 	}
-	return wallet, nil
+	return wallet.ToWeb(), nil
 }
 
-func (svc *WalletService) Upsert(ctx context.Context, wallet *model.Wallet) (uuid.UUID, error) {
-	id, err := svc.store.Wallet.Upsert(ctx, wallet)
+func (svc *WalletService) Deposit(ctx context.Context, wallet *model.WalletRequest) error {
+	walletDB := wallet.ToDB()
+
+	err := svc.store.Wallet.Deposit(ctx, walletDB)
 	if err != nil {
-		return uuid.Nil, errors.Wrap(err, "failed to upsert wallet")
+		return errors.Wrap(err, "failed to make deposit")
 	}
-	return id, nil
+	return nil
+}
+
+func (svc *WalletService) Withdraw(ctx context.Context, wallet *model.WalletRequest) error {
+	walletDB := wallet.ToDB()
+
+	err := svc.store.Wallet.Withdraw(ctx, walletDB)
+	if err != nil {
+		return errors.Wrap(err, "failed to make withdraw")
+	}
+	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	logger "github.com/mizmorr/loggerm"
 	"github.com/mizmorr/wallet/internal/model"
 	reporitory "github.com/mizmorr/wallet/internal/repository"
 	"github.com/mizmorr/wallet/internal/service"
@@ -15,7 +16,9 @@ import (
 
 func TestNewWalletService(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+
+	ctx := context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
+
 	store, err := store.New(context.Background())
 
 	// VerifySetup
@@ -32,8 +35,7 @@ func TestNewWalletService(t *testing.T) {
 
 func TestNewWalletServiceFailed(t *testing.T) {
 	// Setup
-	ctx := context.Background()
-
+	ctx := context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
 	// Test
 	_, err := service.NewWalletService(nil, ctx)
 
@@ -43,8 +45,7 @@ func TestNewWalletServiceFailed(t *testing.T) {
 
 func TestServiceGet(t *testing.T) {
 	// Setup
-
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
 
 	db, err := pg.Dial(ctx)
 	assert.NoError(t, err)
@@ -54,11 +55,10 @@ func TestServiceGet(t *testing.T) {
 
 	id := uuid.New()
 	wallet := &model.Wallet{
-		ID:        id,
-		Operation: "Deposit",
-		Amount:    100,
+		ID:     id,
+		Amount: 100,
 	}
-	_, err = repo.Upsert(ctx, wallet)
+	_, err = repo.Create(ctx, wallet)
 	assert.NoError(t, err)
 
 	store, err := store.New(ctx)
@@ -73,15 +73,69 @@ func TestServiceGet(t *testing.T) {
 
 	// Verify
 	assert.NoError(t, err)
-	assert.Equal(t, wallet, walletNew)
+	assert.Equal(t, wallet.ToWeb(), walletNew)
 
+	// Clean up
 	_, err = db.Exec(context.Background(), "DELETE FROM wallets WHERE id=$1", id)
 	assert.NoError(t, err)
 }
 
-func TestServiceCreate(t *testing.T) {
+func TestServiceDeposit(t *testing.T) {
 	// Setup
-	ctx := context.Background()
+	var (
+		ctx                  = context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
+		expectedAmount int64 = 150
+	)
+	db, err := pg.Dial(ctx)
+	assert.NoError(t, err)
+
+	repo := reporitory.NewWalletRepository(db)
+	assert.NotNil(t, repo)
+
+	id := uuid.New()
+
+	wallet := &model.Wallet{
+		ID:     id,
+		Amount: 100,
+	}
+
+	_, err = repo.Create(ctx, wallet)
+	assert.NoError(t, err)
+
+	store, err := store.New(ctx)
+	assert.NotNil(t, store)
+	assert.NoError(t, err)
+
+	service, err := service.NewWalletService(store, ctx)
+	assert.NoError(t, err)
+	walletRequest := &model.WalletRequest{
+		ID:        id,
+		Operation: "Deposit",
+		Amount:    50,
+	}
+
+	// Test
+	err = service.Deposit(ctx, walletRequest)
+
+	// Verify
+	assert.NoError(t, err)
+
+	walletNew, err := repo.GetByID(ctx, id)
+	assert.NoError(t, err)
+	assert.Equal(t, wallet.ID, walletNew.ID)
+	assert.Equal(t, expectedAmount, walletNew.Amount)
+
+	// Clean up
+	_, err = db.Exec(context.Background(), "DELETE FROM wallets WHERE id=$1", id)
+	assert.NoError(t, err)
+}
+
+func TestServiceWithdraw(t *testing.T) {
+	// Setup
+	var (
+		expectedAmount int64 = 50
+		ctx                  = context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
+	)
 
 	db, err := pg.Dial(ctx)
 	assert.NoError(t, err)
@@ -91,50 +145,10 @@ func TestServiceCreate(t *testing.T) {
 
 	id := uuid.New()
 	wallet := &model.Wallet{
-		ID:        id,
-		Operation: "Deposit",
-		Amount:    100,
+		ID:     id,
+		Amount: 100,
 	}
-
-	store, err := store.New(ctx)
-	assert.NotNil(t, store)
-	assert.NoError(t, err)
-
-	service, err := service.NewWalletService(store, ctx)
-	assert.NoError(t, err)
-
-	// Test
-	walletID, err := service.Upsert(ctx, wallet)
-
-	// Verify
-	assert.NoError(t, err)
-	assert.Equal(t, wallet.ID, walletID)
-
-	walletNew, err := repo.GetByID(ctx, id)
-	assert.NoError(t, err)
-	assert.Equal(t, wallet, walletNew)
-
-	_, err = db.Exec(context.Background(), "DELETE FROM wallets WHERE id=$1", id)
-	assert.NoError(t, err)
-}
-
-func TestServiceUpdate(t *testing.T) {
-	// Setup
-	ctx := context.Background()
-
-	db, err := pg.Dial(ctx)
-	assert.NoError(t, err)
-
-	repo := reporitory.NewWalletRepository(db)
-	assert.NotNil(t, repo)
-
-	id := uuid.New()
-	wallet := &model.Wallet{
-		ID:        id,
-		Operation: "Deposit",
-		Amount:    100,
-	}
-	_, err = repo.Upsert(ctx, wallet)
+	_, err = repo.Create(ctx, wallet)
 	assert.NoError(t, err)
 
 	store, err := store.New(ctx)
@@ -144,22 +158,23 @@ func TestServiceUpdate(t *testing.T) {
 	service, err := service.NewWalletService(store, ctx)
 	assert.NoError(t, err)
 
-	wallet.Operation = "Withdraw"
-	wallet.Amount = 50
+	walletRequest := &model.WalletRequest{
+		ID:        id,
+		Amount:    50,
+		Operation: "Withdraw",
+	}
 
 	// Test
-	idUpsert, err := service.Upsert(ctx, wallet)
+	err = service.Withdraw(ctx, walletRequest)
 
 	// Verify
 	assert.NoError(t, err)
-	assert.Equal(t, wallet.ID, idUpsert)
 
 	walletNew, err := repo.GetByID(ctx, id)
 	assert.NoError(t, err)
-	assert.Equal(t, wallet, walletNew)
-	assert.Equal(t, "Withdraw", walletNew.Operation)
-	assert.Equal(t, int64(50), walletNew.Amount)
+	assert.Equal(t, expectedAmount, walletNew.Amount)
 
+	// Clean up
 	_, err = db.Exec(context.Background(), "DELETE FROM wallets WHERE id=$1", id)
 	assert.NoError(t, err)
 }
