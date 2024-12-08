@@ -79,7 +79,7 @@ func (repo *WalletRepository) GetByID(ctx context.Context, id uuid.UUID) (*model
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			logger.Debug().Msg("No such wallet in database with id: " + id.String())
-			return nil, nil
+			return nil, errors.New("Wallet was not found")
 		}
 
 		logger.Debug().Msg("Error occurred while running get on wallet with id: " + id.String())

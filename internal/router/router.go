@@ -13,6 +13,6 @@ func NewRouter(handler *gin.Engine, c *controller.WalletController) {
 	v1 := handler.Group("api/v1")
 	{
 		v1.POST("/wallet", c.Operate)
-		v1.GET("/wallets/", c.Get)
+		v1.GET("/wallets/:uuid", c.Get)
 	}
 }

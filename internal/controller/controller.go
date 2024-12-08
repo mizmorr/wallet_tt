@@ -37,11 +37,7 @@ func NewWalletController(svc Service, ctx context.Context) *WalletController {
 }
 
 func (c *WalletController) Get(g *gin.Context) {
-	userid_raw, ok := g.Params.Get("id")
-	if !ok {
-		respondWithError(g, apperror.ErrBadRequest, "No id provided")
-		return
-	}
+	userid_raw := g.Param("uuid")
 
 	userid, err := uuid.Parse(userid_raw)
 	if err != nil {
