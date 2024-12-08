@@ -178,3 +178,63 @@ func TestServiceWithdraw(t *testing.T) {
 	_, err = db.Exec(context.Background(), "DELETE FROM wallets WHERE id=$1", id)
 	assert.NoError(t, err)
 }
+
+func TestServiceWithdrawFailed(t *testing.T) {
+	// Setup
+	ctx := context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
+
+	store, err := store.New(ctx)
+	assert.NotNil(t, store)
+	assert.NoError(t, err)
+
+	service, err := service.NewWalletService(store, ctx)
+	assert.NoError(t, err)
+
+	walletRequest := &model.WalletRequest{
+		ID:        uuid.New(),
+		Amount:    150,
+		Operation: "Withdraw",
+	}
+
+	err = service.Withdraw(ctx, walletRequest)
+
+	assert.Error(t, err)
+}
+
+func TestServiceDepositFailed(t *testing.T) {
+	// Setup
+	ctx := context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
+
+	store, err := store.New(ctx)
+	assert.NotNil(t, store)
+	assert.NoError(t, err)
+
+	service, err := service.NewWalletService(store, ctx)
+	assert.NoError(t, err)
+
+	walletRequest := &model.WalletRequest{
+		ID:        uuid.New(),
+		Amount:    50,
+		Operation: "Deposit",
+	}
+
+	err = service.Deposit(ctx, walletRequest)
+
+	assert.Error(t, err)
+}
+
+func TestServiceGetByIDFailed(t *testing.T) {
+	// Setup
+	ctx := context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
+
+	store, err := store.New(ctx)
+	assert.NotNil(t, store)
+	assert.NoError(t, err)
+
+	service, err := service.NewWalletService(store, ctx)
+	assert.NoError(t, err)
+
+	_, err = service.Get(ctx, uuid.New())
+
+	assert.Error(t, err)
+}

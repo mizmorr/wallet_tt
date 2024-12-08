@@ -157,3 +157,47 @@ func TestWithdrawFailed(t *testing.T) {
 	_, err = db.Exec(context.Background(), "DELETE FROM wallets WHERE id=$1", id)
 	assert.NoError(t, err)
 }
+
+func TestGetByIDNotFound(t *testing.T) {
+	// Setup
+	ctx := context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
+	db, err := pg.Dial(ctx)
+	assert.NoError(t, err)
+
+	repo := reporitory.NewWalletRepository(db)
+	assert.NotNil(t, repo)
+
+	id := uuid.New()
+
+	// Test
+	wallet, err := repo.GetByID(ctx, id)
+
+	// Verify
+	assert.Nil(t, wallet)
+	assert.Error(t, err)
+
+	// Clean up
+	_, err = db.Exec(context.Background(), "DELETE FROM wallets WHERE id=$1", id)
+	assert.NoError(t, err)
+}
+
+func TestDepositNotFound(t *testing.T) {
+	// Setup
+	ctx := context.WithValue(context.Background(), loggerKey, logger.Get("debug"))
+	db, err := pg.Dial(ctx)
+	assert.NoError(t, err)
+
+	repo := reporitory.NewWalletRepository(db)
+	assert.NotNil(t, repo)
+
+	wallet := &model.Wallet{
+		ID:     uuid.New(),
+		Amount: 100,
+	}
+
+	// Test
+	err = repo.Deposit(ctx, wallet)
+
+	// Verify
+	assert.Error(t, err)
+}
