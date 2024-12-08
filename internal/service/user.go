@@ -29,9 +29,7 @@ func (svc *WalletService) Get(ctx context.Context, id uuid.UUID) (*model.WalletR
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get wallet by id")
 	}
-	if wallet == nil {
-		return nil, errors.New("wallet not found")
-	}
+
 	return wallet.ToWeb(), nil
 }
 
